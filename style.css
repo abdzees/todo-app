@@ -92,3 +92,4 @@ nav button.active:active { background: var(--fg); color: var(--bg); }
 .tasks .collapse { animation: collapse 0.16s ease forwards; overflow: hidden; }
 .tasks .bare::after { content: 'Nothing yet'; margin-left: 10px; font-weight: normal; opacity: 0.7; }
 #status { position: fixed; left: 16px; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); max-width: 448px; margin: 0 auto; padding: 12px; border-radius: 10px; background: #d33; color: #fff; font-size: 15px; z-index: 5; }
+#list { padding-bottom: 50vh; }

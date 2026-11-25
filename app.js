@@ -27,8 +27,7 @@ const isTask = row => row && !row.classList.contains('day')
 const findItem = row => items.find(i => i.id === row?.dataset.id)
 
 function dateLabel(day) {
-  const names = { [dayFrom(-1)]: 'Yesterday', [dayFrom(0)]: 'Today', [dayFrom(1)]: 'Tomorrow' }
-  if (names[day]) return names[day]
+  if (day === today()) return 'Today'
   const [year, month, date] = day.split('-').map(Number)
   const ends = { 1: 'st', 2: 'nd', 3: 'rd' }
   const end = date >= 11 && date <= 13 ? 'th' : ends[date % 10] || 'th'
@@ -241,7 +240,8 @@ function drag(e, li) {
   handle.setPointerCapture(e.pointerId)
 
   const move = () => {
-    const dy = y - startY + window.scrollY - startScroll
+    const reach = dy => Math.min(Math.max(dy, middles[1] - middles[from]), middles.at(-1) - middles[from] + 1)
+    const dy = reach(y - startY + window.scrollY - startScroll)
     li.style.transform = `translateY(${dy}px) scale(1.02)`
     const center = middles[from] + dy
     to = middles.filter((m, i) => i !== from && m < center).length
