@@ -1,3 +1,6 @@
+const EMAIL = ''
+const PASSWORD = ''
+
 const SUPABASE = 'https://gbtmveejoekuecxkhqcn.supabase.co'
 const KEY = 'sb_publishable_6H5GaGFAmqScsrIF1fpO6A_4ldiP-T9'
 const APP = 'https://abdzees.github.io/todo-app/'
@@ -16,33 +19,14 @@ const today = () => {
 }
 
 async function login() {
-  step = 'read saved login'
-  if (!Keychain.contains('todo-email')) {
-    if (config.runsInWidget) throw new Error('Open Scriptable and run this script once')
-    step = 'ask for login'
-    const alert = new Alert()
-    alert.title = 'Sign in'
-    alert.addTextField('Email', '')
-    alert.addSecureTextField('Password', '')
-    alert.addAction('Save')
-    await alert.present()
-    const email = String(alert.textFieldValue(0) ?? '').trim()
-    const password = String(alert.textFieldValue(1) ?? '')
-    if (!email || !password) throw new Error(`Email is ${email ? 'filled' : 'empty'}, password is ${password ? 'filled' : 'empty'}. Run again and fill both.`)
-    Keychain.set('todo-email', email)
-    Keychain.set('todo-password', password)
-  }
+  if (!EMAIL || !PASSWORD) throw new Error('Type your email and password into the first two lines of this script')
   step = 'sign in request'
   const req = new Request(`${SUPABASE}/auth/v1/token?grant_type=password`)
   req.method = 'POST'
   req.headers = { apikey: KEY, 'Content-Type': 'application/json' }
-  req.body = JSON.stringify({ email: Keychain.get('todo-email'), password: Keychain.get('todo-password') })
+  req.body = JSON.stringify({ email: EMAIL, password: PASSWORD })
   const res = await req.loadJSON()
-  if (!res.access_token) {
-    Keychain.remove('todo-email')
-    Keychain.remove('todo-password')
-    throw new Error('Sign in failed, run the script again')
-  }
+  if (!res.access_token) throw new Error('Sign in failed, check your email and password')
   return res.access_token
 }
 
