@@ -7,6 +7,8 @@ const FG = new Color('#f2f2f2')
 const MUTED = new Color('#888888')
 const LIMITS = { small: 4, medium: 5, large: 11, extraLarge: 11 }
 
+let step = 'start'
+
 const pad = n => String(n).padStart(2, '0')
 const today = () => {
   const d = new Date()
@@ -14,8 +16,10 @@ const today = () => {
 }
 
 async function login() {
+  step = 'read saved login'
   if (!Keychain.contains('todo-email')) {
     if (config.runsInWidget) throw new Error('Open Scriptable and run this script once')
+    step = 'ask for login'
     const alert = new Alert()
     alert.title = 'Sign in'
     alert.addTextField('Email', '')
@@ -25,6 +29,7 @@ async function login() {
     Keychain.set('todo-email', alert.textFieldValue(0))
     Keychain.set('todo-password', alert.textFieldValue(1))
   }
+  step = 'sign in request'
   const req = new Request(`${SUPABASE}/auth/v1/token?grant_type=password`)
   req.method = 'POST'
   req.headers = { apikey: KEY, 'Content-Type': 'application/json' }
@@ -38,8 +43,8 @@ async function login() {
   return res.access_token
 }
 
-async function loadTasks() {
-  const token = await login()
+async function loadTasks(token) {
+  step = 'load tasks'
   const query = `select=text,done&kind=eq.todo&removed=eq.false&day=eq.${today()}&order=position`
   const req = new Request(`${SUPABASE}/rest/v1/items?${query}`)
   req.headers = { apikey: KEY, Authorization: `Bearer ${token}` }
@@ -76,7 +81,12 @@ function build(rows, error) {
   }
   widget.addSpacer(8)
 
-  if (error) line(widget, error.message, MUTED, 13)
+  if (error) {
+    const message = widget.addText(error.message)
+    message.textColor = MUTED
+    message.font = Font.systemFont(11)
+    message.lineLimit = 6
+  }
   else if (!open.length) line(widget, rows.length ? 'All done' : 'Nothing today', MUTED, 14)
   else {
     const limit = LIMITS[config.widgetFamily] || 5
@@ -96,11 +106,27 @@ function build(rows, error) {
   return widget
 }
 
+async function run() {
+  const token = await login()
+  const rows = await loadTasks(token)
+  step = 'draw widget'
+  return build(rows)
+}
+
 let widget
 try {
-  widget = build(await loadTasks())
+  widget = await run()
 } catch (error) {
-  widget = build(null, error)
+  const text = `${step}: ${error.message || error}`
+  Pasteboard.copy(text)
+  if (!config.runsInWidget) {
+    const alert = new Alert()
+    alert.title = 'Error'
+    alert.message = text
+    alert.addAction('OK')
+    await alert.present()
+  }
+  widget = build(null, new Error(text))
 }
 
 if (config.runsInWidget) Script.setWidget(widget)
