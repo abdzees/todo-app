@@ -47,15 +47,8 @@ function groupByDay(tasks, keepToday) {
   const order = (a, b) => rank(a) - rank(b) || (a > now ? a.localeCompare(b) : b.localeCompare(a))
   return [...days].sort(order).map(day => ({
     day,
-    tasks: tasks.filter(t => t.day === day).sort((a, b) => a.done - b.done || a.position - b.position),
+    tasks: tasks.filter(t => t.day === day).sort((a, b) => a.position - b.position),
   }))
-}
-
-function nextPosition(task, done) {
-  const group = items.filter(i => i.kind === 'todo' && !i.removed && i.day === task.day && i.id !== task.id && i.done === done)
-  if (!group.length) return task.position
-  const positions = group.map(i => i.position)
-  return done ? Math.min(...positions) - 1 : Math.max(...positions) + 1
 }
 
 function row(task, inTrash) {
@@ -78,7 +71,7 @@ function row(task, inTrash) {
   } else {
     li.className = task.done ? 'done' : ''
     checkbox.checked = task.done
-    checkbox.onchange = () => update(task.id, { done: checkbox.checked, position: nextPosition(task, checkbox.checked) })
+    checkbox.onchange = () => update(task.id, { done: checkbox.checked })
     span.onclick = () => edit(span, task)
     li.querySelector('.handle').onpointerdown = e => drag(e, li)
     li.querySelector('.remove').onclick = () => removeTask(li, task)
