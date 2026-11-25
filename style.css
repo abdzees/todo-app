@@ -28,5 +28,7 @@ nav button.active { background: var(--fg); color: var(--bg); }
 
 #list span { cursor: text; }
 #list span:focus { outline: none; border-bottom: 1px solid var(--muted); }
-#list .up, #list .down { border: none; color: var(--muted); padding: 4px 8px; }
-#list button:disabled { opacity: 0.25; }
+#list .handle { color: var(--muted); padding: 4px 8px; cursor: grab; touch-action: none; user-select: none; font-weight: normal; }
+#list li { transition: transform 0.15s, background 0.15s, box-shadow 0.15s; }
+#list li.dragging { transition: background 0.15s, box-shadow 0.15s; }
+#list li.dragging { position: relative; z-index: 1; margin: 0 -12px; padding: 12px; background: var(--line); border-radius: 10px; border-bottom-color: transparent; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); cursor: grabbing; }

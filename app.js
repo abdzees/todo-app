@@ -7,6 +7,7 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 const $ = id => document.getElementById(id)
 let items = JSON.parse(localStorage.getItem('items') || '[]')
 let noteId = null
+let dragging = false
 
 function show(signedIn) {
   $('login').hidden = signedIn
@@ -15,24 +16,21 @@ function show(signedIn) {
 
 function render() {
   const todos = items.filter(i => i.kind === 'todo')
-  if (!document.activeElement.isContentEditable) {
+  if (!dragging && !document.activeElement.isContentEditable) {
     $('list').innerHTML = ''
-    todos.forEach((t, i) => {
+    for (const t of todos) {
       const li = document.createElement('li')
+      li.dataset.id = t.id
       li.className = t.done ? 'done' : ''
-      li.innerHTML = `<input type="checkbox" ${t.done ? 'checked' : ''}><span></span>
-        <button class="up" ${i === 0 ? 'disabled' : ''}>↑</button>
-        <button class="down" ${i === todos.length - 1 ? 'disabled' : ''}>↓</button>
-        <button class="remove">✕</button>`
+      li.innerHTML = `<input type="checkbox" ${t.done ? 'checked' : ''}><span></span><b class="handle">☰</b><button class="remove">✕</button>`
       const span = li.querySelector('span')
       span.textContent = t.text
       span.onclick = () => edit(span, t)
       li.querySelector('input').onchange = e => update(t.id, { done: e.target.checked })
-      li.querySelector('.up').onclick = () => swap(t, todos[i - 1])
-      li.querySelector('.down').onclick = () => swap(t, todos[i + 1])
+      li.querySelector('.handle').onpointerdown = e => drag(e, li)
       li.querySelector('.remove').onclick = () => remove(t.id)
       $('list').append(li)
-    })
+    }
   }
   const note = items.find(i => i.kind === 'note')
   if (note && document.activeElement !== $('note')) $('note').value = note.text
@@ -71,12 +69,45 @@ function edit(span, todo) {
   }
 }
 
-async function swap(a, b) {
-  await Promise.all([
-    db.from('items').update({ position: b.position }).eq('id', a.id),
-    db.from('items').update({ position: a.position }).eq('id', b.id),
-  ])
-  load()
+function drag(e, li) {
+  e.preventDefault()
+  const handle = e.currentTarget
+  const rows = [...$('list').children]
+  const from = rows.indexOf(li)
+  const height = li.offsetHeight
+  const middles = rows.map(r => r.getBoundingClientRect().top + r.offsetHeight / 2)
+  const startY = e.clientY
+  let to = from
+  dragging = true
+  li.classList.add('dragging')
+  handle.setPointerCapture(e.pointerId)
+
+  handle.onpointermove = ev => {
+    const dy = ev.clientY - startY
+    li.style.transform = `translateY(${dy}px) scale(1.02)`
+    const center = middles[from] + dy
+    to = middles.filter((m, i) => i !== from && m < center).length
+    rows.forEach((r, i) => {
+      if (r === li) return
+      const shift = i > from && i <= to ? -height : i < from && i >= to ? height : 0
+      r.style.transform = shift ? `translateY(${shift}px)` : ''
+    })
+  }
+
+  handle.onpointerup = handle.onpointercancel = async () => {
+    handle.onpointermove = handle.onpointerup = handle.onpointercancel = null
+    rows.forEach(r => (r.style.transform = ''))
+    li.classList.remove('dragging')
+    dragging = false
+    if (to === from) return
+    const order = rows.filter(r => r !== li)
+    order.splice(to, 0, li)
+    const find = r => items.find(i => i.id === r?.dataset.id)
+    const prev = find(order[to - 1])
+    const next = find(order[to + 1])
+    const position = !prev ? next.position - 1 : !next ? prev.position + 1 : (prev.position + next.position) / 2
+    await update(li.dataset.id, { position })
+  }
 }
 
 async function remove(id) {
