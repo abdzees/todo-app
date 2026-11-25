@@ -23,17 +23,6 @@ const dayFrom = n => {
 }
 const today = () => dayFrom(0)
 
-function haptic() {
-  if (navigator.vibrate) return navigator.vibrate(10)
-  if (!('ontouchstart' in window)) return
-  const label = document.createElement('label')
-  label.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none'
-  label.innerHTML = '<input type="checkbox" switch>'
-  document.body.append(label)
-  label.click()
-  label.remove()
-}
-
 let audio
 document.addEventListener('pointerdown', () => {
   audio ||= new (window.AudioContext || window.webkitAudioContext)()
@@ -327,6 +316,7 @@ function beginDrag(e, li, handle) {
   const from = rows.indexOf(li)
   const height = li.offsetHeight
   const middles = rows.map(r => r.getBoundingClientRect().top + r.offsetHeight / 2)
+  const tops = rows.map((r, i) => middles[i] - r.offsetHeight / 2)
   const startY = e.clientY
   const startScroll = window.scrollY
   let y = startY
@@ -334,7 +324,6 @@ function beginDrag(e, li, handle) {
   let active = true
   dragging = true
   li.classList.add('dragging')
-  haptic()
   handle.setPointerCapture(e.pointerId)
   const block = ev => ev.preventDefault()
   addEventListener('touchmove', block, { passive: false })
@@ -343,8 +332,11 @@ function beginDrag(e, li, handle) {
     const reach = dy => Math.min(Math.max(dy, middles[1] - middles[from]), middles.at(-1) - middles[from] + 1)
     const dy = reach(y - startY + window.scrollY - startScroll)
     li.style.transform = `translateY(${dy}px) scale(1.02)`
-    const center = middles[from] + dy
-    to = middles.filter((m, i) => i !== from && m < center).length
+    const top = tops[from] + dy
+    const bottom = top + height
+    const down = rows.filter((r, i) => i > from && bottom > tops[i] + r.offsetHeight * 0.65).length
+    const up = rows.filter((r, i) => i < from && top < tops[i] + r.offsetHeight * 0.35).length
+    to = from + down - up
     rows.forEach((r, i) => {
       if (r === li) return
       const shift = i > from && i <= to ? -height : i < from && i >= to ? height : 0
@@ -385,7 +377,6 @@ function beginDrag(e, li, handle) {
       if (to < from) slot += above.offsetHeight
     }
     li.classList.remove('dragging')
-    haptic()
     li.style.transform = `translateY(${slot}px)`
     setTimeout(() => drop(rows, li, to, from), 160)
   }
