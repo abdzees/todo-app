@@ -6,13 +6,12 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 const $ = id => document.getElementById(id)
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const TABS = ['todos', 'removed', 'notes']
-const icon = path => `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`
-const CLOSE_ICON = icon('<path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/>')
+const TABS = ['todos', 'notes']
+const icon = (path, size = 16) => `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`
+const BIN_ICON = icon('<path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.7 8.5h6.6l.7-8.5M6.7 7v4M9.3 7v4"/>', 24)
 const DRAG_ICON = icon('<path d="M3.5 4h9M3.5 8h9M3.5 12h9"/>')
 
 let items = JSON.parse(localStorage.getItem('items') || '[]')
-let selected = new Set()
 let noteId = null
 let dragging = false
 let animating = false
@@ -51,43 +50,31 @@ function groupByDay(tasks, keepToday) {
   }))
 }
 
-function row(task, inTrash) {
+function row(task) {
   const li = document.createElement('li')
   li.dataset.id = task.id
-  li.innerHTML = inTrash
-    ? `<input type="checkbox"><span></span><button class="remove" title="Delete forever">${CLOSE_ICON}</button>`
-    : `<input type="checkbox"><span></span><button class="handle" title="Drag">${DRAG_ICON}</button><button class="remove">${CLOSE_ICON}</button>`
+  li.className = task.done ? 'done' : ''
+  li.innerHTML = `<div class="bin">${BIN_ICON}</div><div class="front"><input type="checkbox"><span></span><button class="handle" title="Drag">${DRAG_ICON}</button></div>`
   const checkbox = li.querySelector('input')
   const span = li.querySelector('span')
   span.textContent = task.text
-
-  if (inTrash) {
-    checkbox.checked = selected.has(task.id)
-    checkbox.onchange = () => {
-      checkbox.checked ? selected.add(task.id) : selected.delete(task.id)
-      render()
-    }
-    li.querySelector('.remove').onclick = () => deleteForever([task.id])
-  } else {
-    li.className = task.done ? 'done' : ''
-    checkbox.checked = task.done
-    checkbox.onchange = () => update(task.id, { done: checkbox.checked })
-    span.onclick = () => edit(span, task)
-    li.querySelector('.handle').onpointerdown = e => drag(e, li)
-    li.querySelector('.remove').onclick = () => removeTask(li, task)
-  }
+  checkbox.checked = task.done
+  checkbox.onchange = () => update(task.id, { done: checkbox.checked })
+  span.onclick = () => !li.dataset.swiped && edit(span, task)
+  li.querySelector('.handle').onpointerdown = e => drag(e, li)
+  li.onpointerdown = e => swipeRow(e, li, task)
   return li
 }
 
-function renderList(ul, tasks, inTrash) {
+function renderList(ul, tasks) {
   ul.innerHTML = ''
-  for (const { day, tasks: dayTasks } of groupByDay(tasks, !inTrash)) {
+  for (const { day, tasks: dayTasks } of groupByDay(tasks, true)) {
     const heading = document.createElement('li')
     heading.className = dayTasks.length ? 'day' : 'day bare'
     heading.dataset.day = day
     heading.textContent = dateLabel(day)
     ul.append(heading)
-    for (const task of dayTasks) ul.append(row(task, inTrash))
+    for (const task of dayTasks) ul.append(row(task))
   }
 }
 
@@ -100,18 +87,9 @@ function badge() {
 }
 
 function render() {
-  const todos = items.filter(i => i.kind === 'todo')
-  const trash = todos.filter(t => t.removed)
-  selected = new Set([...selected].filter(id => trash.some(t => t.id === id)))
-
   if (!dragging && !animating && !document.activeElement.isContentEditable) {
-    renderList($('list'), todos.filter(t => !t.removed), false)
-    renderList($('trash'), trash, true)
+    renderList($('list'), items.filter(i => i.kind === 'todo' && !i.removed))
   }
-
-  $('select-all').checked = trash.length > 0 && selected.size === trash.length
-  $('delete-selected').disabled = $('restore-selected').disabled = selected.size === 0
-  $('delete-selected').textContent = selected.size ? `Delete forever (${selected.size})` : 'Delete forever'
 
   const note = items.find(i => i.kind === 'note')
   if (note && document.activeElement !== $('note')) $('note').value = note.text
@@ -180,41 +158,88 @@ function withEmptyHeadings(ul, leaving) {
   return out
 }
 
-async function animateOut(ul, rows, name) {
+async function animateOut(rows) {
   animating = true
-  const leaving = withEmptyHeadings(ul, rows)
-  leaving.forEach(r => {
+  withEmptyHeadings($('list'), rows).forEach(r => {
     r.style.setProperty('--h', r.offsetHeight + 'px')
-    r.classList.add(name)
+    r.classList.add('collapse')
   })
-  await new Promise(done => setTimeout(done, name === 'pop' ? 380 : 300))
+  await new Promise(done => setTimeout(done, 180))
   animating = false
 }
 
-async function removeTask(li, task) {
-  if (animating) return
-  await animateOut($('list'), [li], 'pop')
-  await update(task.id, { removed: true })
-}
-
-async function restore(ids) {
-  if (animating) return
-  const rows = [...$('trash').children].filter(r => ids.includes(r.dataset.id))
-  await animateOut($('trash'), rows, 'slide')
-  items.filter(i => ids.includes(i.id)).forEach(i => (i.removed = false))
+async function deleteTask(li, task) {
+  await animateOut([li])
+  items = items.filter(i => i.id !== task.id)
   save()
   render()
-  check((await db.from('items').update({ removed: false }).in('id', ids)).error)
+  check((await db.from('items').delete().eq('id', task.id)).error)
 }
 
-async function deleteForever(ids) {
-  if (animating) return
-  const rows = [...$('trash').children].filter(r => ids.includes(r.dataset.id))
-  await animateOut($('trash'), rows, 'pop')
-  items = items.filter(i => !ids.includes(i.id))
-  save()
-  render()
-  check((await db.from('items').delete().in('id', ids)).error)
+function swipeRow(e, li, task) {
+  if (dragging || animating || e.target.closest('.handle, input') || e.target.isContentEditable) return
+  if (e.pointerType === 'mouse' && e.button !== 0) return
+  const front = li.querySelector('.front')
+  const width = li.offsetWidth
+  const startX = e.clientX
+  const startY = e.clientY
+  let mode = null
+  let dx = 0
+  let moves = []
+
+  const stop = () => {
+    removeEventListener('pointermove', move)
+    removeEventListener('pointerup', end)
+    removeEventListener('pointercancel', end)
+  }
+
+  const move = ev => {
+    const mx = ev.clientX - startX
+    const my = ev.clientY - startY
+    if (!mode) {
+      if (Math.max(Math.abs(mx), Math.abs(my)) < 10) return
+      if (Math.abs(my) >= Math.abs(mx) || mx > 0) return stop()
+      mode = 'h'
+      dragging = true
+      li.classList.add('swiping')
+      getSelection().removeAllRanges()
+    }
+    dx = Math.max(-width, Math.min(0, mx))
+    moves = [...moves.filter(m => ev.timeStamp - m.time < 100), { time: ev.timeStamp, dx }]
+    front.style.transform = `translateX(${dx}px)`
+    li.style.setProperty('--s', Math.min(1, -dx / 56))
+    li.classList.toggle('armed', -dx > width * 0.5)
+  }
+
+  const end = async ev => {
+    stop()
+    if (mode !== 'h') return
+    li.dataset.swiped = '1'
+    setTimeout(() => delete li.dataset.swiped, 100)
+    const reach = (-dx - velocity(moves, performance.now()) * 0.3) / width
+    const wait = ms => new Promise(done => setTimeout(done, ms))
+    if (ev.type === 'pointerup' && reach > 0.5) {
+      front.style.transition = 'transform 0.18s ease-out'
+      front.style.transform = `translateX(${-width}px)`
+      await wait(180)
+      dragging = false
+      await deleteTask(li, task)
+    } else {
+      front.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.3, 0.64, 1)'
+      front.style.transform = ''
+      li.classList.remove('armed')
+      li.style.setProperty('--s', 0)
+      await wait(300)
+      li.classList.remove('swiping')
+      front.removeAttribute('style')
+      dragging = false
+      render()
+    }
+  }
+
+  addEventListener('pointermove', move)
+  addEventListener('pointerup', end)
+  addEventListener('pointercancel', end)
 }
 
 function edit(span, task) {
@@ -375,15 +400,6 @@ document.addEventListener('click', () => {
   if (navigator.standalone && Notification.permission === 'default') Notification.requestPermission()
 }, { once: true })
 
-$('select-all').onchange = e => {
-  const trash = items.filter(i => i.kind === 'todo' && i.removed)
-  selected = new Set(e.target.checked ? trash.map(t => t.id) : [])
-  render()
-}
-
-$('restore-selected').onclick = () => restore([...selected])
-$('delete-selected').onclick = () => deleteForever([...selected])
-
 let current = 'todos'
 
 function play(el, name) {
@@ -439,7 +455,7 @@ function hideNeighbor() {
 
 document.addEventListener('touchstart', e => {
   const t = e.touches[0]
-  const blocked = dragging || settling || e.touches.length > 1 || e.target.closest('.handle')
+  const blocked = dragging || settling || e.touches.length > 1 || e.target.closest('.handle, #list li:not(.day)')
   swipe = blocked ? null : { x: t.clientX, y: t.clientY, mode: null, name: null, neighbor: null, dx: 0, moves: [] }
 }, { passive: true })
 
