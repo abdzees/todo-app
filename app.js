@@ -51,6 +51,13 @@ function groupByDay(tasks, keepToday) {
   }))
 }
 
+function nextPosition(task, done) {
+  const group = items.filter(i => i.kind === 'todo' && !i.removed && i.day === task.day && i.id !== task.id && i.done === done)
+  if (!group.length) return task.position
+  const positions = group.map(i => i.position)
+  return done ? Math.min(...positions) - 1 : Math.max(...positions) + 1
+}
+
 function row(task, inTrash) {
   const li = document.createElement('li')
   li.dataset.id = task.id
@@ -71,7 +78,7 @@ function row(task, inTrash) {
   } else {
     li.className = task.done ? 'done' : ''
     checkbox.checked = task.done
-    checkbox.onchange = () => update(task.id, { done: checkbox.checked })
+    checkbox.onchange = () => update(task.id, { done: checkbox.checked, position: nextPosition(task, checkbox.checked) })
     span.onclick = () => edit(span, task)
     li.querySelector('.handle').onpointerdown = e => drag(e, li)
     li.querySelector('.remove').onclick = () => removeTask(li, task)
@@ -380,7 +387,7 @@ function play(el, name) {
   setTimeout(() => el.classList.remove(name), 450)
 }
 
-function tab(name) {
+function tab(name, slide = true) {
   if (name === current) return
   const side = TABS.indexOf(name) > TABS.indexOf(current) ? 'from-right' : 'from-left'
   current = name
@@ -388,26 +395,87 @@ function tab(name) {
     $(t).hidden = t !== name
     $('tab-' + t).classList.toggle('active', t === name)
   }
-  play($(name), side)
+  if (slide) play($(name), side)
   play($('tab-' + name), 'bounce')
 }
 for (const t of TABS) $('tab-' + t).onclick = () => tab(t)
 
 let swipe = null
+let settling = false
+const slideTo = (el, x) => (el.style.transform = `translateX(${x}px)`)
+
+function showNeighbor(side) {
+  const name = TABS[TABS.indexOf(current) + side]
+  if (swipe.name === name) return
+  if (swipe.neighbor) hideNeighbor()
+  swipe.name = name
+  if (!name) return
+  const from = $(current)
+  const el = $(name)
+  el.classList.remove('from-left', 'from-right')
+  Object.assign(el.style, { position: 'absolute', top: from.offsetTop + 'px', left: from.offsetLeft + 'px', width: from.offsetWidth + 'px' })
+  el.hidden = false
+  swipe.neighbor = el
+}
+
+function hideNeighbor() {
+  const el = swipe.neighbor
+  el.hidden = true
+  el.removeAttribute('style')
+  swipe.neighbor = null
+}
+
 document.addEventListener('touchstart', e => {
   const t = e.touches[0]
-  swipe = e.target.closest('.handle') ? null : { x: t.clientX, y: t.clientY }
+  const blocked = dragging || settling || e.touches.length > 1 || e.target.closest('.handle')
+  swipe = blocked ? null : { x: t.clientX, y: t.clientY, mode: null, name: null, neighbor: null, dx: 0 }
 }, { passive: true })
-document.addEventListener('touchend', e => {
+
+document.addEventListener('touchmove', e => {
   if (!swipe || dragging) return
-  const t = e.changedTouches[0]
+  const t = e.touches[0]
   const dx = t.clientX - swipe.x
   const dy = t.clientY - swipe.y
+  if (!swipe.mode) {
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 10) return
+    if (Math.abs(dx) <= Math.abs(dy)) return (swipe = null)
+    swipe.mode = 'h'
+    $(current).classList.remove('from-left', 'from-right')
+  }
+  e.preventDefault()
+  swipe.dx = dx
+  const side = dx < 0 ? 1 : -1
+  showNeighbor(side)
+  const width = window.innerWidth
+  slideTo($(current), swipe.neighbor ? dx : dx * 0.3)
+  if (swipe.neighbor) slideTo(swipe.neighbor, side * width + dx)
+}, { passive: false })
+
+async function release() {
+  if (!swipe || swipe.mode !== 'h') return (swipe = null)
+  const { neighbor, name, dx } = swipe
+  const width = window.innerWidth
+  const side = dx < 0 ? 1 : -1
+  const go = !!neighbor && Math.abs(dx) / width > 0.7
+  const from = $(current)
+  settling = true
+  for (const el of [from, neighbor]) if (el) el.style.transition = 'transform 0.22s ease-out'
+  slideTo(from, go ? -side * width : 0)
+  if (neighbor) slideTo(neighbor, go ? 0 : side * width)
+  await new Promise(done => setTimeout(done, 240))
+  from.removeAttribute('style')
+  if (neighbor) {
+    neighbor.removeAttribute('style')
+    neighbor.hidden = !go
+  }
   swipe = null
-  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return
-  const next = TABS[TABS.indexOf(current) + (dx < 0 ? 1 : -1)]
-  if (next) tab(next)
-}, { passive: true })
+  settling = false
+  if (go) {
+    tab(name, false)
+  }
+}
+document.addEventListener('touchend', release)
+document.addEventListener('touchcancel', release)
 
 $('logout').onclick = async () => {
   await db.auth.signOut()
