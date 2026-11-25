@@ -111,3 +111,4 @@ nav button { transition: transform 0.12s; }
 #choices { display: flex; gap: 10px; }
 #choices button { flex: 1; }
 #choices .primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+@media (hover: hover) { #choices .primary:not(:active):hover { background: none; color: var(--fg); border-color: var(--fg); } }

@@ -435,6 +435,7 @@ function mode(up) {
   signingUp = up
   $('confirm-password').hidden = !up
   $('confirm-password').required = up
+  $('signin').textContent = up ? 'Sign in instead' : 'Sign in'
   $('signin').classList.toggle('primary', !up)
   $('signup').classList.toggle('primary', up)
   $('error').textContent = ''
