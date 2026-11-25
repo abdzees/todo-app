@@ -15,15 +15,24 @@ function show(signedIn) {
 
 function render() {
   const todos = items.filter(i => i.kind === 'todo')
-  $('list').innerHTML = ''
-  for (const t of todos) {
-    const li = document.createElement('li')
-    li.className = t.done ? 'done' : ''
-    li.innerHTML = `<input type="checkbox" ${t.done ? 'checked' : ''}><span></span><button class="remove">✕</button>`
-    li.querySelector('span').textContent = t.text
-    li.querySelector('input').onchange = e => update(t.id, { done: e.target.checked })
-    li.querySelector('.remove').onclick = () => remove(t.id)
-    $('list').append(li)
+  if (!document.activeElement.isContentEditable) {
+    $('list').innerHTML = ''
+    todos.forEach((t, i) => {
+      const li = document.createElement('li')
+      li.className = t.done ? 'done' : ''
+      li.innerHTML = `<input type="checkbox" ${t.done ? 'checked' : ''}><span></span>
+        <button class="up" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button class="down" ${i === todos.length - 1 ? 'disabled' : ''}>↓</button>
+        <button class="remove">✕</button>`
+      const span = li.querySelector('span')
+      span.textContent = t.text
+      span.onclick = () => edit(span, t)
+      li.querySelector('input').onchange = e => update(t.id, { done: e.target.checked })
+      li.querySelector('.up').onclick = () => swap(t, todos[i - 1])
+      li.querySelector('.down').onclick = () => swap(t, todos[i + 1])
+      li.querySelector('.remove').onclick = () => remove(t.id)
+      $('list').append(li)
+    })
   }
   const note = items.find(i => i.kind === 'note')
   if (note && document.activeElement !== $('note')) $('note').value = note.text
@@ -31,7 +40,7 @@ function render() {
 }
 
 async function load() {
-  const { data, error } = await db.from('items').select().order('created_at')
+  const { data, error } = await db.from('items').select().order('position').order('created_at')
   if (error) return
   items = data
   localStorage.setItem('items', JSON.stringify(items))
@@ -45,6 +54,28 @@ async function add(text) {
 
 async function update(id, changes) {
   await db.from('items').update(changes).eq('id', id)
+  load()
+}
+
+function edit(span, todo) {
+  span.contentEditable = true
+  span.focus()
+  span.onkeydown = e => {
+    if (e.key === 'Enter') { e.preventDefault(); span.blur() }
+  }
+  span.onblur = () => {
+    span.contentEditable = false
+    const text = span.textContent.trim()
+    if (text && text !== todo.text) update(todo.id, { text })
+    else render()
+  }
+}
+
+async function swap(a, b) {
+  await Promise.all([
+    db.from('items').update({ position: b.position }).eq('id', a.id),
+    db.from('items').update({ position: a.position }).eq('id', b.id),
+  ])
   load()
 }
 

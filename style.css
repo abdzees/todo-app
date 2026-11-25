@@ -25,3 +25,8 @@ nav button.active { background: var(--fg); color: var(--bg); }
 #list .remove { border: none; color: var(--muted); padding: 4px 8px; }
 
 #note { height: 70vh; resize: none; }
+
+#list span { cursor: text; }
+#list span:focus { outline: none; border-bottom: 1px solid var(--muted); }
+#list .up, #list .down { border: none; color: var(--muted); padding: 4px 8px; }
+#list button:disabled { opacity: 0.25; }

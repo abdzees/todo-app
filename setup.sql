@@ -13,3 +13,5 @@ create policy "own items" on items
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 alter publication supabase_realtime add table items;
+
+alter table items add column position double precision not null default extract(epoch from now());
