@@ -45,3 +45,11 @@ nav button.active { background: var(--fg); color: var(--bg); }
 #delete-selected:not(:disabled) { color: #d33; border-color: #d33; }
 #delete-selected:disabled { opacity: 0.4; }
 nav button { white-space: nowrap; padding: 10px 12px; }
+#actions { display: flex; gap: 8px; }
+#restore-selected:disabled { opacity: 0.4; }
+.tasks .restore { border: none; color: var(--muted); padding: 4px 8px; }
+#bar label, #bar button { white-space: nowrap; }
+#bar button { padding: 10px 12px; }
+#bar label { gap: 8px; }
+#bar { gap: 8px; font-size: 15px; }
+#bar button { padding: 10px; }

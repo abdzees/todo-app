@@ -42,7 +42,7 @@ function row(task, inTrash) {
   const li = document.createElement('li')
   li.dataset.id = task.id
   li.innerHTML = inTrash
-    ? '<input type="checkbox"><span></span><button class="remove" title="Delete forever">✕</button>'
+    ? '<input type="checkbox"><span></span><button class="restore" title="Restore">↩</button><button class="remove" title="Delete forever">✕</button>'
     : '<input type="checkbox"><span></span><b class="handle">☰</b><button class="remove">✕</button>'
   const checkbox = li.querySelector('input')
   const span = li.querySelector('span')
@@ -54,6 +54,7 @@ function row(task, inTrash) {
       checkbox.checked ? selected.add(task.id) : selected.delete(task.id)
       render()
     }
+    li.querySelector('.restore').onclick = () => restore([task.id])
     li.querySelector('.remove').onclick = () => deleteForever([task.id])
   } else {
     li.className = task.done ? 'done' : ''
@@ -89,7 +90,7 @@ function render() {
   }
 
   $('select-all').checked = trash.length > 0 && selected.size === trash.length
-  $('delete-selected').disabled = selected.size === 0
+  $('delete-selected').disabled = $('restore-selected').disabled = selected.size === 0
   $('delete-selected').textContent = selected.size ? `Delete forever (${selected.size})` : 'Delete forever'
 
   const note = items.find(i => i.kind === 'note')
@@ -112,6 +113,11 @@ async function add(text, day) {
 
 async function update(id, changes) {
   await db.from('items').update(changes).eq('id', id)
+  load()
+}
+
+async function restore(ids) {
+  await db.from('items').update({ removed: false }).in('id', ids)
   load()
 }
 
@@ -233,6 +239,7 @@ $('select-all').onchange = e => {
   render()
 }
 
+$('restore-selected').onclick = () => restore([...selected])
 $('delete-selected').onclick = () => deleteForever([...selected])
 
 function tab(name) {

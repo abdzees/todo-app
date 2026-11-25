@@ -42,7 +42,10 @@
     <section id="removed" hidden>
       <div id="bar">
         <label><input type="checkbox" id="select-all"> Select all</label>
-        <button id="delete-selected" disabled>Delete forever</button>
+        <div id="actions">
+          <button id="restore-selected" disabled>Restore</button>
+          <button id="delete-selected" disabled>Delete forever</button>
+        </div>
       </div>
       <ul id="trash" class="tasks"></ul>
     </section>
