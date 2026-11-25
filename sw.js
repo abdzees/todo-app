@@ -1,4 +1,4 @@
-const CACHE = 'todo-v21'
+const CACHE = 'todo-v22'
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'manifest.json', 'icon.png']
 
 self.addEventListener('install', e => {

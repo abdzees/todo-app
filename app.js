@@ -440,7 +440,6 @@ $('add').onsubmit = e => {
   e.preventDefault()
   add($('new').value.trim(), $('date').value)
   $('new').value = ''
-  $('date').value = today()
 }
 
 $('note').oninput = e => {
