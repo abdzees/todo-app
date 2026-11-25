@@ -56,3 +56,10 @@ nav button { white-space: nowrap; padding: 10px 12px; }
 .tasks .restore { display: flex; align-items: center; }
 .tasks .remove, .tasks .restore { display: flex; align-items: center; }
 .tasks svg { display: block; }
+
+.tasks .handle, .tasks .remove, .tasks .restore {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; margin: -4px; padding: 0;
+  border: none; background: none; color: var(--muted);
+}
+.tasks .handle { cursor: grab; touch-action: none; user-select: none; }
