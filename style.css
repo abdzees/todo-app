@@ -88,13 +88,12 @@ nav button { transition: transform 0.12s; }
 .tasks li:not(.day) { padding: 0; }
 .tasks .front { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; padding: 12px 0; }
 .tasks .bin { position: absolute; inset: 0; display: none; align-items: center; justify-content: flex-end; padding-right: 20px; background: #d33; color: #fff; }
-.tasks .bin svg { transform: scale(var(--s, 0)); transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.tasks li.armed .bin svg { transform: scale(1.3); }
 .tasks li.swiping { overflow: hidden; user-select: none; -webkit-user-select: none; }
 .tasks li.swiping .bin { display: flex; }
 .tasks li.swiping .front { background: var(--bg); }
 #logout:not(:disabled):active { background: #d33; border-color: #d33; color: #fff; }
 @media (hover: hover) { #logout:not(:disabled):not(:active):hover { background: rgba(221, 51, 51, 0.12); } }
-@keyframes armed-pop { from { transform: scale(1); } to { transform: scale(1.3); } }
-@keyframes jitter { from { transform: scale(1.3) rotate(-10deg); } to { transform: scale(1.3) rotate(10deg); } }
-.tasks li.armed .bin svg { animation: armed-pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), jitter 0.12s ease-in-out 0.2s infinite alternate; }
+@property --k { syntax: '<number>'; inherits: true; initial-value: 0; }
+@keyframes jitter { from { transform: scale(var(--k)) rotate(-10deg); } to { transform: scale(var(--k)) rotate(10deg); } }
+.tasks .bin svg { --k: var(--s, 0); transition: --k 0.18s cubic-bezier(0.34, 1.56, 0.64, 1); animation: jitter 0.12s ease-in-out infinite alternate; }
+.tasks li.armed .bin svg { --k: 1.3; }
