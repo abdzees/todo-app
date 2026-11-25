@@ -581,7 +581,10 @@ async function release() {
 document.addEventListener('touchend', release)
 document.addEventListener('touchcancel', release)
 
-$('logout').onclick = async () => {
+$('logout').onclick = () => $('confirm').showModal()
+$('cancel').onclick = () => $('confirm').close()
+
+$('confirm-out').onclick = async () => {
   await db.auth.signOut()
   localStorage.removeItem('items')
   location.reload()
