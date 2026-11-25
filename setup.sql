@@ -17,3 +17,6 @@ create policy "own items" on items
 alter publication supabase_realtime add table items;
 
 alter table items add column position double precision not null default extract(epoch from now());
+
+alter table items add column day date not null default current_date;
+alter table items add column removed boolean not null default false;
