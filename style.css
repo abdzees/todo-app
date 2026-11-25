@@ -107,3 +107,7 @@ nav button { transition: transform 0.12s; }
 #confirm-out:not(:disabled):active { background: #d33; border-color: #d33; color: #fff; }
 @media (hover: hover) { #confirm-out:not(:disabled):not(:active):hover { background: #d33; border-color: #d33; color: #fff; } }
 #confirm, #confirm button { outline: none; }
+
+#choices { display: flex; gap: 10px; }
+#choices button { flex: 1; }
+#choices .primary { background: var(--fg); color: var(--bg); border-color: var(--fg); }

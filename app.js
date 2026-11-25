@@ -429,11 +429,40 @@ function start() {
   db.channel('items').on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, apply).subscribe()
 }
 
+let signingUp = false
+
+function mode(up) {
+  signingUp = up
+  $('confirm-password').hidden = !up
+  $('confirm-password').required = up
+  $('signin').classList.toggle('primary', !up)
+  $('signup').classList.toggle('primary', up)
+  $('error').textContent = ''
+}
+
+$('signin').onclick = () => (signingUp ? mode(false) : $('login').requestSubmit())
+$('signup').onclick = () => (signingUp ? $('login').requestSubmit() : mode(true))
+
 $('login').onsubmit = async e => {
   e.preventDefault()
-  const { error } = await db.auth.signInWithPassword({ email: $('email').value, password: $('password').value })
+  const credentials = { email: $('email').value, password: $('password').value }
+  if (!signingUp) {
+    const { error } = await db.auth.signInWithPassword(credentials)
+    if (error) $('error').textContent = error.message
+    else start()
+    return
+  }
+  if ($('password').value !== $('confirm-password').value) {
+    $('error').textContent = 'Passwords do not match'
+    return
+  }
+  const { data, error } = await db.auth.signUp(credentials)
   if (error) $('error').textContent = error.message
-  else start()
+  else if (data.session) start()
+  else {
+    mode(false)
+    $('error').textContent = 'Check your email to confirm, then sign in'
+  }
 }
 
 $('add').onsubmit = e => {
