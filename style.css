@@ -102,3 +102,11 @@ body { overflow-x: clip; }
 nav button.bounce { animation: bounce 0.4s ease; }
 #app { position: relative; }
 body { touch-action: pan-y; }
+.tasks input[type=checkbox], #bar input[type=checkbox] {
+  appearance: none; -webkit-appearance: none;
+  flex: none; width: 20px; height: 20px; margin: 0; padding: 0;
+  border: 1.5px solid var(--muted); border-radius: 50%; background: none;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.tasks input[type=checkbox]:checked, #bar input[type=checkbox]:checked { background: var(--fg); border-color: var(--fg); }
+.tasks input[type=checkbox]:active, #bar input[type=checkbox]:active { transform: scale(0.88); }
