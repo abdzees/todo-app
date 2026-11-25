@@ -9,6 +9,8 @@ create table items (
 
 alter table items enable row level security;
 
+grant select, insert, update, delete on items to authenticated;
+
 create policy "own items" on items
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
