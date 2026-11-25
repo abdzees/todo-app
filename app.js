@@ -260,6 +260,29 @@ function drag(e, li) {
   if (dragging) return
   e.preventDefault()
   const handle = e.currentTarget
+  if (e.pointerType === 'mouse') return beginDrag(e, li, handle)
+  const { clientX: x, clientY: y } = e
+  let latest = e
+  const cancel = () => {
+    clearTimeout(timer)
+    handle.removeEventListener('pointermove', check)
+    handle.removeEventListener('pointerup', cancel)
+    handle.removeEventListener('pointercancel', cancel)
+  }
+  const check = ev => {
+    latest = ev
+    if (Math.hypot(ev.clientX - x, ev.clientY - y) > 8) cancel()
+  }
+  const timer = setTimeout(() => {
+    cancel()
+    beginDrag(latest, li, handle)
+  }, 200)
+  handle.addEventListener('pointermove', check)
+  handle.addEventListener('pointerup', cancel)
+  handle.addEventListener('pointercancel', cancel)
+}
+
+function beginDrag(e, li, handle) {
   const rows = [...$('list').children]
   const from = rows.indexOf(li)
   const height = li.offsetHeight
@@ -272,6 +295,8 @@ function drag(e, li) {
   dragging = true
   li.classList.add('dragging')
   handle.setPointerCapture(e.pointerId)
+  const block = ev => ev.preventDefault()
+  addEventListener('touchmove', block, { passive: false })
 
   const move = () => {
     const reach = dy => Math.min(Math.max(dy, middles[1] - middles[from]), middles.at(-1) - middles[from] + 1)
@@ -307,6 +332,7 @@ function drag(e, li) {
 
   handle.onpointerup = handle.onpointercancel = () => {
     active = false
+    removeEventListener('touchmove', block)
     handle.onpointermove = handle.onpointerup = handle.onpointercancel = null
     const heights = list => list.reduce((sum, r) => sum + r.offsetHeight, 0)
     let slot = to > from ? heights(rows.slice(from + 1, to + 1)) : -heights(rows.slice(to, from))

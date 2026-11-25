@@ -28,7 +28,7 @@ nav button.active { background: var(--fg); color: var(--bg); }
 
 .tasks span { cursor: text; }
 .tasks span:focus { outline: none; border-bottom: 1px solid var(--muted); }
-.tasks .handle { color: var(--muted); padding: 4px 8px; cursor: grab; touch-action: none; user-select: none; font-weight: normal; }
+.tasks .handle { color: var(--muted); padding: 4px 8px; cursor: grab; touch-action: pan-y; user-select: none; font-weight: normal; }
 .tasks li { position: relative; z-index: 0; transition: transform 0.15s ease, border-color 0.15s; }
 .tasks li::before { content: ''; position: absolute; inset: 0 -12px; z-index: -1; border-radius: 10px; background: var(--line); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); opacity: 0; transition: opacity 0.15s; }
 .tasks li.dragging { z-index: 1; border-bottom-color: transparent; cursor: grabbing; transition: none; }
@@ -46,7 +46,7 @@ nav button { white-space: nowrap; padding: 10px 12px; }
   width: 32px; height: 32px; margin: -4px; padding: 0;
   border: none; background: none; color: var(--muted);
 }
-.tasks .handle { cursor: grab; touch-action: none; user-select: none; }
+.tasks .handle { cursor: grab; touch-action: pan-y; user-select: none; }
 
 
 button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: background 0.12s, color 0.12s, border-color 0.12s, transform 0.12s; }
