@@ -238,4 +238,8 @@ $('logout').onclick = async () => {
 const { data } = await db.auth.getSession()
 data.session ? start() : show(false)
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js')
+if ('serviceWorker' in navigator) {
+  const hadController = !!navigator.serviceWorker.controller
+  navigator.serviceWorker.register('sw.js')
+  navigator.serviceWorker.addEventListener('controllerchange', () => hadController && location.reload())
+}
