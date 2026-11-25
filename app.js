@@ -371,13 +371,43 @@ $('select-all').onchange = e => {
 $('restore-selected').onclick = () => restore([...selected])
 $('delete-selected').onclick = () => deleteForever([...selected])
 
+let current = 'todos'
+
+function play(el, name) {
+  el.classList.remove(name)
+  void el.offsetWidth
+  el.classList.add(name)
+  setTimeout(() => el.classList.remove(name), 450)
+}
+
 function tab(name) {
+  if (name === current) return
+  const side = TABS.indexOf(name) > TABS.indexOf(current) ? 'from-right' : 'from-left'
+  current = name
   for (const t of TABS) {
     $(t).hidden = t !== name
     $('tab-' + t).classList.toggle('active', t === name)
   }
+  play($(name), side)
+  play($('tab-' + name), 'bounce')
 }
 for (const t of TABS) $('tab-' + t).onclick = () => tab(t)
+
+let swipe = null
+document.addEventListener('touchstart', e => {
+  const t = e.touches[0]
+  swipe = e.target.closest('.handle') ? null : { x: t.clientX, y: t.clientY }
+}, { passive: true })
+document.addEventListener('touchend', e => {
+  if (!swipe || dragging) return
+  const t = e.changedTouches[0]
+  const dx = t.clientX - swipe.x
+  const dy = t.clientY - swipe.y
+  swipe = null
+  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 2) return
+  const next = TABS[TABS.indexOf(current) + (dx < 0 ? 1 : -1)]
+  if (next) tab(next)
+}, { passive: true })
 
 $('logout').onclick = async () => {
   await db.auth.signOut()
