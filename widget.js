@@ -26,8 +26,11 @@ async function login() {
     alert.addSecureTextField('Password', '')
     alert.addAction('Save')
     await alert.present()
-    Keychain.set('todo-email', alert.textFieldValue(0))
-    Keychain.set('todo-password', alert.textFieldValue(1))
+    const email = String(alert.textFieldValue(0) ?? '').trim()
+    const password = String(alert.textFieldValue(1) ?? '')
+    if (!email || !password) throw new Error(`Email is ${email ? 'filled' : 'empty'}, password is ${password ? 'filled' : 'empty'}. Run again and fill both.`)
+    Keychain.set('todo-email', email)
+    Keychain.set('todo-password', password)
   }
   step = 'sign in request'
   const req = new Request(`${SUPABASE}/auth/v1/token?grant_type=password`)
