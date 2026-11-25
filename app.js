@@ -6,7 +6,7 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 const $ = id => document.getElementById(id)
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const TABS = ['todos', 'notes', 'removed']
+const TABS = ['todos', 'removed', 'notes']
 const icon = path => `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`
 const CLOSE_ICON = icon('<path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/>')
 const DRAG_ICON = icon('<path d="M3.5 4h9M3.5 8h9M3.5 12h9"/>')
@@ -460,10 +460,10 @@ async function release() {
   const go = !!neighbor && (Math.sign(dx) * (dx + velocity(swipe.moves, performance.now()) * 2)) / width > 0.6
   const from = $(current)
   settling = true
-  for (const el of [from, neighbor]) if (el) el.style.transition = 'transform 0.22s ease-out'
+  for (const el of [from, neighbor]) if (el) el.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.1, 0.64, 1)'
   slideTo(from, go ? -side * width : 0)
   if (neighbor) slideTo(neighbor, go ? 0 : side * width)
-  await new Promise(done => setTimeout(done, 240))
+  await new Promise(done => setTimeout(done, 320))
   from.removeAttribute('style')
   if (neighbor) {
     neighbor.removeAttribute('style')
