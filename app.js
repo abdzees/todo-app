@@ -15,6 +15,7 @@ let items = JSON.parse(localStorage.getItem('items') || '[]')
 let selected = new Set()
 let noteId = null
 let dragging = false
+let animating = false
 
 const today = () => new Date().toLocaleDateString('en-CA')
 const isTask = row => row && !row.classList.contains('day')
@@ -64,7 +65,7 @@ function row(task, inTrash) {
     checkbox.onchange = () => update(task.id, { done: checkbox.checked })
     span.onclick = () => edit(span, task)
     li.querySelector('.handle').onpointerdown = e => drag(e, li)
-    li.querySelector('.remove').onclick = () => update(task.id, { removed: true })
+    li.querySelector('.remove').onclick = () => removeTask(li, task)
   }
   return li
 }
@@ -86,7 +87,7 @@ function render() {
   const trash = todos.filter(t => t.removed)
   selected = new Set([...selected].filter(id => trash.some(t => t.id === id)))
 
-  if (!dragging && !document.activeElement.isContentEditable) {
+  if (!dragging && !animating && !document.activeElement.isContentEditable) {
     renderList($('list'), todos.filter(t => !t.removed), false)
     renderList($('trash'), trash, true)
   }
@@ -118,12 +119,53 @@ async function update(id, changes) {
   load()
 }
 
+function withEmptyHeadings(ul, leaving) {
+  const all = [...ul.children]
+  const out = [...leaving]
+  all.forEach((row, i) => {
+    if (isTask(row) || (ul.id === 'list' && row.dataset.day === today())) return
+    const group = []
+    for (let j = i + 1; j < all.length && isTask(all[j]); j++) group.push(all[j])
+    if (group.length && group.every(r => leaving.includes(r))) out.push(row)
+  })
+  return out
+}
+
+async function animateOut(ul, rows, name) {
+  animating = true
+  const leaving = withEmptyHeadings(ul, rows)
+  leaving.forEach(r => {
+    r.style.setProperty('--h', r.offsetHeight + 'px')
+    r.classList.add(name)
+  })
+  await new Promise(done => setTimeout(done, name === 'pop' ? 380 : 300))
+  animating = false
+}
+
+async function removeTask(li, task) {
+  if (animating) return
+  await animateOut($('list'), [li], 'pop')
+  task.removed = true
+  render()
+  await update(task.id, { removed: true })
+}
+
 async function restore(ids) {
+  if (animating) return
+  const rows = [...$('trash').children].filter(r => ids.includes(r.dataset.id))
+  await animateOut($('trash'), rows, 'slide')
+  items.filter(i => ids.includes(i.id)).forEach(i => (i.removed = false))
+  render()
   await db.from('items').update({ removed: false }).in('id', ids)
   load()
 }
 
 async function deleteForever(ids) {
+  if (animating) return
+  const rows = [...$('trash').children].filter(r => ids.includes(r.dataset.id))
+  await animateOut($('trash'), rows, 'pop')
+  items = items.filter(i => !ids.includes(i.id))
+  render()
   await db.from('items').delete().in('id', ids)
   load()
 }
