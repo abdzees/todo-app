@@ -91,6 +91,14 @@ function renderList(ul, tasks, inTrash) {
   }
 }
 
+function badge() {
+  if (!('setAppBadge' in navigator)) return
+  const day = today()
+  const left = items.filter(i => i.kind === 'todo' && !i.removed && !i.done && i.day === day).length
+  const set = left ? navigator.setAppBadge(left) : navigator.clearAppBadge()
+  set.catch(() => {})
+}
+
 function render() {
   const todos = items.filter(i => i.kind === 'todo')
   const trash = todos.filter(t => t.removed)
@@ -108,6 +116,7 @@ function render() {
   const note = items.find(i => i.kind === 'note')
   if (note && document.activeElement !== $('note')) $('note').value = note.text
   noteId = note?.id
+  badge()
 }
 
 const save = () => localStorage.setItem('items', JSON.stringify(items))
@@ -361,6 +370,10 @@ document.addEventListener('visibilitychange', () => {
   else if (!$('app').hidden) load()
 })
 addEventListener('pagehide', flushNote)
+
+document.addEventListener('click', () => {
+  if (navigator.standalone && Notification.permission === 'default') Notification.requestPermission()
+}, { once: true })
 
 $('select-all').onchange = e => {
   const trash = items.filter(i => i.kind === 'todo' && i.removed)
