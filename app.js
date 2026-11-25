@@ -135,6 +135,7 @@ function edit(span, task) {
 }
 
 function drag(e, li) {
+  if (dragging) return
   e.preventDefault()
   const handle = e.currentTarget
   const rows = [...$('list').children]
@@ -159,13 +160,21 @@ function drag(e, li) {
     })
   }
 
-  handle.onpointerup = handle.onpointercancel = async () => {
+  handle.onpointerup = handle.onpointercancel = () => {
     handle.onpointermove = handle.onpointerup = handle.onpointercancel = null
-    rows.forEach(r => (r.style.transform = ''))
+    const heights = list => list.reduce((sum, r) => sum + r.offsetHeight, 0)
+    const slot = to > from ? heights(rows.slice(from + 1, to + 1)) : -heights(rows.slice(to, from))
     li.classList.remove('dragging')
-    dragging = false
-    if (to === from) return
+    li.style.transform = `translateY(${slot}px)`
+    setTimeout(() => drop(rows, li, to, from), 160)
+  }
+}
 
+async function drop(rows, li, to, from) {
+  const item = findItem(li)
+  let changes = null
+
+  if (to !== from) {
     const order = rows.filter(r => r !== li)
     order.splice(to, 0, li)
     const heading = order.slice(0, to).reverse().find(r => !isTask(r)) || order.find(r => !isTask(r))
@@ -174,9 +183,14 @@ function drag(e, li) {
     const position = prev && next ? (prev.position + next.position) / 2
       : prev ? prev.position + 1
       : next ? next.position - 1
-      : findItem(li).position
-    await update(li.dataset.id, { day: heading.dataset.day, position })
+      : item.position
+    changes = { day: heading.dataset.day, position }
+    Object.assign(item, changes)
   }
+
+  dragging = false
+  render()
+  if (changes) await update(item.id, changes)
 }
 
 async function saveNote(text) {
