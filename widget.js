@@ -18,8 +18,8 @@ async function login() {
     if (config.runsInWidget) throw new Error('Open Scriptable and run this script once')
     const alert = new Alert()
     alert.title = 'Sign in'
-    alert.addTextField('Email')
-    alert.addSecureTextField('Password')
+    alert.addTextField('Email', '')
+    alert.addSecureTextField('Password', '')
     alert.addAction('Save')
     await alert.present()
     Keychain.set('todo-email', alert.textFieldValue(0))
