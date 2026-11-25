@@ -428,7 +428,7 @@ function hideNeighbor() {
 document.addEventListener('touchstart', e => {
   const t = e.touches[0]
   const blocked = dragging || settling || e.touches.length > 1 || e.target.closest('.handle')
-  swipe = blocked ? null : { x: t.clientX, y: t.clientY, mode: null, name: null, neighbor: null, dx: 0 }
+  swipe = blocked ? null : { x: t.clientX, y: t.clientY, mode: null, name: null, neighbor: null, dx: 0, moves: [] }
 }, { passive: true })
 
 document.addEventListener('touchmove', e => {
@@ -444,6 +444,7 @@ document.addEventListener('touchmove', e => {
   }
   e.preventDefault()
   swipe.dx = dx
+  swipe.moves = [...swipe.moves.filter(m => e.timeStamp - m.time < 100), { time: e.timeStamp, dx }]
   const side = dx < 0 ? 1 : -1
   showNeighbor(side)
   const width = window.innerWidth
@@ -451,12 +452,19 @@ document.addEventListener('touchmove', e => {
   if (swipe.neighbor) slideTo(swipe.neighbor, side * width + dx)
 }, { passive: false })
 
+function velocity(moves, now) {
+  const first = moves[0]
+  const last = moves.at(-1)
+  if (!last || last.time === first.time || now - last.time > 80) return 0
+  return ((last.dx - first.dx) / (last.time - first.time)) * 1000
+}
+
 async function release() {
   if (!swipe || swipe.mode !== 'h') return (swipe = null)
   const { neighbor, name, dx } = swipe
   const width = window.innerWidth
   const side = dx < 0 ? 1 : -1
-  const go = !!neighbor && Math.abs(dx) / width > 0.7
+  const go = !!neighbor && (Math.sign(dx) * (dx + velocity(swipe.moves, performance.now()) * 2)) / width > 0.6
   const from = $(current)
   settling = true
   for (const el of [from, neighbor]) if (el) el.style.transition = 'transform 0.22s ease-out'
