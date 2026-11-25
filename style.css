@@ -17,18 +17,29 @@ nav { display: flex; gap: 8px; margin-bottom: 16px; }
 nav button.active { background: var(--fg); color: var(--bg); }
 #logout { margin-left: auto; color: var(--muted); }
 
-#list { list-style: none; margin: 16px 0 0; padding: 0; }
-#list li { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
-#list li.done span { color: var(--muted); text-decoration: line-through; }
-#list span { flex: 1; word-break: break-word; }
-#list input[type=checkbox] { width: 22px; height: 22px; }
-#list .remove { border: none; color: var(--muted); padding: 4px 8px; }
+.tasks { list-style: none; margin: 16px 0 0; padding: 0; }
+.tasks li { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.tasks li.done span { color: var(--muted); text-decoration: line-through; }
+.tasks span { flex: 1; word-break: break-word; }
+.tasks input[type=checkbox] { width: 22px; height: 22px; }
+.tasks .remove { border: none; color: var(--muted); padding: 4px 8px; }
 
 #note { height: 70vh; resize: none; }
 
-#list span { cursor: text; }
-#list span:focus { outline: none; border-bottom: 1px solid var(--muted); }
-#list .handle { color: var(--muted); padding: 4px 8px; cursor: grab; touch-action: none; user-select: none; font-weight: normal; }
-#list li { transition: transform 0.15s, background 0.15s, box-shadow 0.15s; }
-#list li.dragging { transition: background 0.15s, box-shadow 0.15s; }
-#list li.dragging { position: relative; z-index: 1; margin: 0 -12px; padding: 12px; background: var(--line); border-radius: 10px; border-bottom-color: transparent; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); cursor: grabbing; }
+.tasks span { cursor: text; }
+.tasks span:focus { outline: none; border-bottom: 1px solid var(--muted); }
+.tasks .handle { color: var(--muted); padding: 4px 8px; cursor: grab; touch-action: none; user-select: none; font-weight: normal; }
+.tasks li { transition: transform 0.15s, background 0.15s, box-shadow 0.15s; }
+.tasks li.dragging { transition: background 0.15s, box-shadow 0.15s; }
+.tasks li.dragging { position: relative; z-index: 1; margin: 0 -12px; padding: 12px; background: var(--line); border-radius: 10px; border-bottom-color: transparent; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3); cursor: grabbing; }
+
+#add { display: flex; gap: 8px; }
+#date { width: auto; }
+.tasks li.day { display: block; padding: 20px 0 6px; color: var(--muted); font-size: 14px; font-weight: 600; border-bottom: none; }
+.tasks:empty::before { content: 'Nothing removed'; color: var(--muted); }
+#bar { display: flex; align-items: center; justify-content: space-between; }
+#bar label { display: flex; align-items: center; gap: 10px; }
+#bar input { width: 22px; height: 22px; }
+#delete-selected:not(:disabled) { color: #d33; border-color: #d33; }
+#delete-selected:disabled { opacity: 0.4; }
+nav button { white-space: nowrap; padding: 10px 12px; }

@@ -23,18 +23,28 @@
     <nav>
       <button id="tab-todos" class="active">Todos</button>
       <button id="tab-notes">Notes</button>
+      <button id="tab-removed">Removed</button>
       <button id="logout">Log out</button>
     </nav>
 
     <section id="todos">
       <form id="add">
         <input id="new" placeholder="Add a task" autocomplete="off" required>
+        <input id="date" type="date" required>
       </form>
-      <ul id="list"></ul>
+      <ul id="list" class="tasks"></ul>
     </section>
 
     <section id="notes" hidden>
       <textarea id="note" placeholder="Write anything"></textarea>
+    </section>
+
+    <section id="removed" hidden>
+      <div id="bar">
+        <label><input type="checkbox" id="select-all"> Select all</label>
+        <button id="delete-selected" disabled>Delete forever</button>
+      </div>
+      <ul id="trash" class="tasks"></ul>
     </section>
   </main>
 
