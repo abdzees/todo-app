@@ -1,4 +1,4 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/+esm'
 
 const SUPABASE_URL = 'https://gbtmveejoekuecxkhqcn.supabase.co'
 const SUPABASE_KEY = 'sb_publishable_6H5GaGFAmqScsrIF1fpO6A_4ldiP-T9'
@@ -17,11 +17,18 @@ let noteId = null
 let dragging = false
 let animating = false
 
-const today = () => new Date().toLocaleDateString('en-CA')
+const dayFrom = n => {
+  const d = new Date()
+  d.setDate(d.getDate() + n)
+  return d.toLocaleDateString('en-CA')
+}
+const today = () => dayFrom(0)
 const isTask = row => row && !row.classList.contains('day')
 const findItem = row => items.find(i => i.id === row?.dataset.id)
 
 function dateLabel(day) {
+  const names = { [dayFrom(-1)]: 'Yesterday', [dayFrom(0)]: 'Today', [dayFrom(1)]: 'Tomorrow' }
+  if (names[day]) return names[day]
   const [year, month, date] = day.split('-').map(Number)
   const ends = { 1: 'st', 2: 'nd', 3: 'rd' }
   const end = date >= 11 && date <= 13 ? 'th' : ends[date % 10] || 'th'
@@ -33,11 +40,15 @@ function show(signedIn) {
   $('app').hidden = !signedIn
 }
 
-function groupByDay(tasks) {
-  const days = [...new Set(tasks.map(t => t.day))]
-  return days.sort().reverse().map(day => ({
+function groupByDay(tasks, keepToday) {
+  const now = today()
+  const days = new Set(tasks.map(t => t.day))
+  if (keepToday) days.add(now)
+  const rank = day => (day === now ? 0 : day > now ? 1 : 2)
+  const order = (a, b) => rank(a) - rank(b) || (a > now ? a.localeCompare(b) : b.localeCompare(a))
+  return [...days].sort(order).map(day => ({
     day,
-    tasks: tasks.filter(t => t.day === day).sort((a, b) => a.position - b.position),
+    tasks: tasks.filter(t => t.day === day).sort((a, b) => a.done - b.done || a.position - b.position),
   }))
 }
 
@@ -71,9 +82,9 @@ function row(task, inTrash) {
 
 function renderList(ul, tasks, inTrash) {
   ul.innerHTML = ''
-  for (const { day, tasks: dayTasks } of groupByDay(tasks)) {
+  for (const { day, tasks: dayTasks } of groupByDay(tasks, !inTrash)) {
     const heading = document.createElement('li')
-    heading.className = 'day'
+    heading.className = dayTasks.length ? 'day' : 'day bare'
     heading.dataset.day = day
     heading.textContent = dateLabel(day)
     ul.append(heading)
@@ -100,22 +111,52 @@ function render() {
   noteId = note?.id
 }
 
+const save = () => localStorage.setItem('items', JSON.stringify(items))
+
 async function load() {
-  const { data, error } = await db.from('items').select().order('position').order('created_at')
-  if (error) return
+  const { data, error } = await db.from('items').select()
+  if (error) return report(error)
   items = data
-  localStorage.setItem('items', JSON.stringify(items))
+  save()
+  render()
+}
+
+function report(error) {
+  console.error(error)
+  $('status').textContent = 'Could not sync: ' + error.message
+  $('status').hidden = false
+  clearTimeout(report.timer)
+  report.timer = setTimeout(() => ($('status').hidden = true), 5000)
+  return true
+}
+
+function check(error) {
+  if (!error) return false
+  report(error)
+  load()
+  return true
+}
+
+function apply({ eventType, new: row, old }) {
+  if (eventType === 'DELETE') items = items.filter(i => i.id !== old.id)
+  else {
+    const item = items.find(i => i.id === row.id)
+    item ? Object.assign(item, row) : items.push(row)
+  }
+  save()
   render()
 }
 
 async function add(text, day) {
-  await db.from('items').insert({ kind: 'todo', text, day })
-  load()
+  const { data, error } = await db.from('items').insert({ kind: 'todo', text, day }).select().single()
+  if (!check(error)) apply({ eventType: 'INSERT', new: data })
 }
 
 async function update(id, changes) {
-  await db.from('items').update(changes).eq('id', id)
-  load()
+  Object.assign(items.find(i => i.id === id), changes)
+  save()
+  render()
+  check((await db.from('items').update(changes).eq('id', id)).error)
 }
 
 function withEmptyHeadings(ul, leaving) {
@@ -125,7 +166,8 @@ function withEmptyHeadings(ul, leaving) {
     if (isTask(row)) return
     const group = []
     for (let j = i + 1; j < all.length && isTask(all[j]); j++) group.push(all[j])
-    if (group.length && group.every(r => leaving.includes(r))) out.push(row)
+    const keep = ul.id === 'list' && row.dataset.day === today()
+    if (group.length && !keep && group.every(r => leaving.includes(r))) out.push(row)
   })
   return out
 }
@@ -144,8 +186,6 @@ async function animateOut(ul, rows, name) {
 async function removeTask(li, task) {
   if (animating) return
   await animateOut($('list'), [li], 'pop')
-  task.removed = true
-  render()
   await update(task.id, { removed: true })
 }
 
@@ -154,9 +194,9 @@ async function restore(ids) {
   const rows = [...$('trash').children].filter(r => ids.includes(r.dataset.id))
   await animateOut($('trash'), rows, 'slide')
   items.filter(i => ids.includes(i.id)).forEach(i => (i.removed = false))
+  save()
   render()
-  await db.from('items').update({ removed: false }).in('id', ids)
-  load()
+  check((await db.from('items').update({ removed: false }).in('id', ids)).error)
 }
 
 async function deleteForever(ids) {
@@ -164,9 +204,9 @@ async function deleteForever(ids) {
   const rows = [...$('trash').children].filter(r => ids.includes(r.dataset.id))
   await animateOut($('trash'), rows, 'pop')
   items = items.filter(i => !ids.includes(i.id))
+  save()
   render()
-  await db.from('items').delete().in('id', ids)
-  load()
+  check((await db.from('items').delete().in('id', ids)).error)
 }
 
 function edit(span, task) {
@@ -192,13 +232,16 @@ function drag(e, li) {
   const height = li.offsetHeight
   const middles = rows.map(r => r.getBoundingClientRect().top + r.offsetHeight / 2)
   const startY = e.clientY
+  const startScroll = window.scrollY
+  let y = startY
   let to = from
+  let active = true
   dragging = true
   li.classList.add('dragging')
   handle.setPointerCapture(e.pointerId)
 
-  handle.onpointermove = ev => {
-    const dy = ev.clientY - startY
+  const move = () => {
+    const dy = y - startY + window.scrollY - startScroll
     li.style.transform = `translateY(${dy}px) scale(1.02)`
     const center = middles[from] + dy
     to = middles.filter((m, i) => i !== from && m < center).length
@@ -209,12 +252,32 @@ function drag(e, li) {
     })
   }
 
+  const scroll = () => {
+    if (!active) return
+    const edge = 70
+    const low = y - edge
+    const high = y - (window.innerHeight - edge)
+    const speed = low < 0 ? low / 4 : high > 0 ? high / 4 : 0
+    if (speed) {
+      window.scrollBy(0, speed)
+      move()
+    }
+    requestAnimationFrame(scroll)
+  }
+  scroll()
+
+  handle.onpointermove = ev => {
+    y = ev.clientY
+    move()
+  }
+
   handle.onpointerup = handle.onpointercancel = () => {
+    active = false
     handle.onpointermove = handle.onpointerup = handle.onpointercancel = null
     const heights = list => list.reduce((sum, r) => sum + r.offsetHeight, 0)
     let slot = to > from ? heights(rows.slice(from + 1, to + 1)) : -heights(rows.slice(to, from))
     const above = rows[from - 1]
-    const alone = above && !isTask(above) && !isTask(rows[from + 1])
+    const alone = above && !isTask(above) && !isTask(rows[from + 1]) && above.dataset.day !== today()
     if (to !== from && alone) {
       above.style.setProperty('--h', above.offsetHeight + 'px')
       above.classList.add('collapse')
@@ -241,18 +304,28 @@ async function drop(rows, li, to, from) {
       : next ? next.position - 1
       : item.position
     changes = { day: heading.dataset.day, position }
-    Object.assign(item, changes)
   }
 
   dragging = false
-  render()
   if (changes) await update(item.id, changes)
+  else render()
+}
+
+let noteSave = Promise.resolve()
+let pendingNote = null
+
+function flushNote() {
+  clearTimeout(flushNote.timer)
+  if (pendingNote === null) return
+  const text = pendingNote
+  pendingNote = null
+  noteSave = noteSave.then(() => saveNote(text))
 }
 
 async function saveNote(text) {
-  if (noteId) await db.from('items').update({ text }).eq('id', noteId)
-  else await db.from('items').insert({ kind: 'note', text })
-  load()
+  if (noteId) return check((await db.from('items').update({ text }).eq('id', noteId)).error)
+  const { data, error } = await db.from('items').insert({ kind: 'note', text }).select().single()
+  if (!check(error)) apply({ eventType: 'INSERT', new: data })
 }
 
 function start() {
@@ -260,7 +333,7 @@ function start() {
   $('date').value = today()
   render()
   load()
-  db.channel('items').on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, load).subscribe()
+  db.channel('items').on('postgres_changes', { event: '*', schema: 'public', table: 'items' }, apply).subscribe()
 }
 
 $('login').onsubmit = async e => {
@@ -277,11 +350,17 @@ $('add').onsubmit = e => {
   $('date').value = today()
 }
 
-let timer
 $('note').oninput = e => {
-  clearTimeout(timer)
-  timer = setTimeout(() => saveNote(e.target.value), 600)
+  pendingNote = e.target.value
+  clearTimeout(flushNote.timer)
+  flushNote.timer = setTimeout(flushNote, 200)
 }
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) flushNote()
+  else if (!$('app').hidden) load()
+})
+addEventListener('pagehide', flushNote)
 
 $('select-all').onchange = e => {
   const trash = items.filter(i => i.kind === 'todo' && i.removed)

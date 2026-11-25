@@ -39,7 +39,6 @@ nav button.active { background: var(--fg); color: var(--bg); }
 #date { width: auto; }
 .tasks li.day { display: block; padding: 20px 0 6px; color: var(--muted); font-size: 14px; font-weight: 600; border-bottom: none; }
 #trash:empty::before { content: 'Nothing removed'; color: var(--muted); }
-#list:empty::before { content: 'No tasks yet'; color: var(--muted); }
 #bar { display: flex; align-items: center; justify-content: space-between; }
 #bar label { display: flex; align-items: center; gap: 10px; }
 #bar input { width: 22px; height: 22px; }
@@ -91,3 +90,5 @@ nav button.active:active { background: var(--fg); color: var(--bg); }
   to { height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; }
 }
 .tasks .collapse { animation: collapse 0.16s ease forwards; overflow: hidden; }
+.tasks .bare::after { content: 'Nothing yet'; margin-left: 10px; font-weight: normal; opacity: 0.7; }
+#status { position: fixed; left: 16px; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); max-width: 448px; margin: 0 auto; padding: 12px; border-radius: 10px; background: #d33; color: #fff; font-size: 15px; z-index: 5; }
