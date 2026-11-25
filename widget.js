@@ -1,6 +1,3 @@
-const EMAIL = ''
-const PASSWORD = ''
-
 const SUPABASE = 'https://gbtmveejoekuecxkhqcn.supabase.co'
 const KEY = 'sb_publishable_6H5GaGFAmqScsrIF1fpO6A_4ldiP-T9'
 const APP = 'https://abdzees.github.io/todo-app/'
@@ -19,14 +16,14 @@ const today = () => {
 }
 
 async function login() {
-  if (!EMAIL || !PASSWORD) throw new Error('Type your email and password into the first two lines of this script')
+  if (!Keychain.contains('todo-email')) throw new Error('Run the Todo Login script once')
   step = 'sign in request'
   const req = new Request(`${SUPABASE}/auth/v1/token?grant_type=password`)
   req.method = 'POST'
   req.headers = { apikey: KEY, 'Content-Type': 'application/json' }
-  req.body = JSON.stringify({ email: EMAIL, password: PASSWORD })
+  req.body = JSON.stringify({ email: Keychain.get('todo-email'), password: Keychain.get('todo-password') })
   const res = await req.loadJSON()
-  if (!res.access_token) throw new Error('Sign in failed, check your email and password')
+  if (!res.access_token) throw new Error('Sign in failed, run the Todo Login script again')
   return res.access_token
 }
 
