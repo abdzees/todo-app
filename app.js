@@ -8,7 +8,7 @@ const $ = id => document.getElementById(id)
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const TABS = ['todos', 'notes']
 const icon = (path, size = 16) => `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`
-const BIN_ICON = icon('<path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.7 8.5h6.6l.7-8.5M6.7 7v4M9.3 7v4"/>', 24)
+const BIN_ICON = icon('<path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.7 8.5h6.6l.7-8.5M6.7 7v4M9.3 7v4"/>', 20)
 const DRAG_ICON = icon('<path d="M3.5 4h9M3.5 8h9M3.5 12h9"/>')
 
 let items = JSON.parse(localStorage.getItem('items') || '[]')

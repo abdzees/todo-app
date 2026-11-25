@@ -2,24 +2,24 @@
 @media (prefers-color-scheme: dark) { :root { --bg: #111; --fg: #f2f2f2; --line: #2a2a2a; } }
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.4 -apple-system, system-ui, sans-serif; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.4 -apple-system, system-ui, sans-serif; }
 [hidden] { display: none !important; }
 
-#login, #app { max-width: 480px; margin: 0 auto; padding: 24px 16px; padding-top: max(24px, env(safe-area-inset-top)); }
+#login, #app { max-width: 480px; margin: 0 auto; padding: 20px 14px; padding-top: max(20px, env(safe-area-inset-top)); }
 #login { display: flex; flex-direction: column; gap: 12px; margin-top: 20vh; }
 #error { color: #d33; margin: 0; }
 
 input, textarea, button { font: inherit; color: inherit; }
-input, textarea { width: 100%; padding: 12px; background: none; border: 1px solid var(--line); border-radius: 10px; }
-button { padding: 10px 14px; background: none; border: 1px solid var(--line); border-radius: 10px; }
+input, textarea { width: 100%; padding: 10px; background: none; border: 1px solid var(--line); border-radius: 10px; }
+button { padding: 8px 12px; background: none; border: 1px solid var(--line); border-radius: 10px; }
 
-nav { display: flex; gap: 8px; margin-bottom: 16px; }
+nav { display: flex; gap: 6px; margin-bottom: 14px; }
 nav button.active { background: var(--fg); color: var(--bg); }
 #logout { margin-left: auto; display: flex; align-items: center; color: #d33; border-color: #d33; }
 #logout svg { display: block; }
 
-.tasks { list-style: none; margin: 16px 0 0; padding: 0; }
-.tasks li { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.tasks { list-style: none; margin: 14px 0 0; padding: 0; }
+.tasks li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
 .tasks li.done span { color: var(--muted); text-decoration: line-through; }
 .tasks span { flex: 1; word-break: break-word; }
 .tasks input[type=checkbox] { width: 22px; height: 22px; }
@@ -35,10 +35,10 @@ nav button.active { background: var(--fg); color: var(--bg); }
 .tasks li.dragging::before { opacity: 1; }
 .tasks li.day::before { display: none; }
 
-#add { display: flex; gap: 8px; }
+#add { display: flex; gap: 6px; }
 #date { width: auto; }
-.tasks li.day { display: block; padding: 20px 0 6px; color: var(--muted); font-size: 14px; font-weight: 600; border-bottom: none; }
-nav button { white-space: nowrap; padding: 10px 12px; }
+.tasks li.day { display: block; padding: 20px 0 6px; color: var(--muted); font-size: 12.5px; font-weight: 600; border-bottom: none; }
+nav button { white-space: nowrap; padding: 8px 10px; }
 .tasks svg { display: block; }
 
 .tasks .handle {
@@ -76,7 +76,7 @@ nav button.bounce { animation: bounce 0.4s ease; }
 body { touch-action: pan-y; }
 .tasks input[type=checkbox] {
   appearance: none; -webkit-appearance: none;
-  flex: none; width: 20px; height: 20px; margin: 0; padding: 0;
+  flex: none; width: 18px; height: 18px; margin: 0; padding: 0;
   border: 1.5px solid var(--muted); border-radius: 50%; background: none;
   transition: background 0.15s, border-color 0.15s, transform 0.15s;
 }
@@ -86,7 +86,7 @@ nav button { transition: transform 0.12s; }
 
 .tasks li:not(.day) { touch-action: pan-y; }
 .tasks li:not(.day) { padding: 0; }
-.tasks .front { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; padding: 12px 0; }
+.tasks .front { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 10px 0; }
 .tasks .bin { position: absolute; inset: 0; display: none; align-items: center; justify-content: flex-end; padding-right: 20px; background: #d33; color: #fff; }
 .tasks li.swiping { overflow: hidden; user-select: none; -webkit-user-select: none; }
 .tasks li.swiping .bin { display: flex; }
@@ -98,7 +98,7 @@ nav button { transition: transform 0.12s; }
 .tasks .bin svg { --k: var(--s, 0); transition: --k 0.18s cubic-bezier(0.34, 1.56, 0.64, 1); animation: jitter 0.12s ease-in-out infinite alternate; }
 .tasks li.armed .bin svg { --k: 1.3; }
 
-#confirm { width: min(320px, 86vw); padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); color: var(--fg); }
+#confirm { width: min(290px, 86vw); padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); color: var(--fg); }
 #confirm::backdrop { background: rgba(0, 0, 0, 0.45); }
 #confirm p { margin: 0 0 16px; text-align: center; }
 #confirm div { display: flex; gap: 10px; }
