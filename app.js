@@ -22,6 +22,44 @@ const dayFrom = n => {
   return d.toLocaleDateString('en-CA')
 }
 const today = () => dayFrom(0)
+
+function haptic() {
+  if (navigator.vibrate) return navigator.vibrate(10)
+  if (!('ontouchstart' in window)) return
+  const label = document.createElement('label')
+  label.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none'
+  label.innerHTML = '<input type="checkbox" switch>'
+  document.body.append(label)
+  label.click()
+  label.remove()
+}
+
+let audio
+document.addEventListener('pointerdown', () => {
+  audio ||= new (window.AudioContext || window.webkitAudioContext)()
+  audio.resume()
+})
+
+function swoosh() {
+  if (!audio) return
+  const length = 0.22
+  const start = audio.currentTime
+  const buffer = audio.createBuffer(1, Math.round(audio.sampleRate * length), audio.sampleRate)
+  buffer.getChannelData(0).forEach((_, i, data) => (data[i] = Math.random() * 2 - 1))
+  const source = audio.createBufferSource()
+  source.buffer = buffer
+  const filter = audio.createBiquadFilter()
+  filter.type = 'bandpass'
+  filter.Q.value = 1.2
+  filter.frequency.setValueAtTime(2500, start)
+  filter.frequency.exponentialRampToValueAtTime(500, start + length)
+  const gain = audio.createGain()
+  gain.gain.setValueAtTime(0.0001, start)
+  gain.gain.exponentialRampToValueAtTime(0.1, start + 0.05)
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + length)
+  source.connect(filter).connect(gain).connect(audio.destination)
+  source.start(start)
+}
 const isTask = row => row && !row.classList.contains('day')
 const findItem = row => items.find(i => i.id === row?.dataset.id)
 
@@ -219,6 +257,7 @@ function swipeRow(e, li, task) {
     const reach = (-dx - velocity(moves, performance.now()) * 0.3) / width
     const wait = ms => new Promise(done => setTimeout(done, ms))
     if (ev.type === 'pointerup' && reach > 0.5) {
+      swoosh()
       front.style.transition = 'transform 0.18s ease-out'
       front.style.transform = `translateX(${-width}px)`
       await wait(180)
@@ -294,6 +333,7 @@ function beginDrag(e, li, handle) {
   let active = true
   dragging = true
   li.classList.add('dragging')
+  haptic()
   handle.setPointerCapture(e.pointerId)
   const block = ev => ev.preventDefault()
   addEventListener('touchmove', block, { passive: false })
@@ -344,6 +384,7 @@ function beginDrag(e, li, handle) {
       if (to < from) slot += above.offsetHeight
     }
     li.classList.remove('dragging')
+    haptic()
     li.style.transform = `translateY(${slot}px)`
     setTimeout(() => drop(rows, li, to, from), 160)
   }
