@@ -33,9 +33,8 @@ function show(signedIn) {
   $('app').hidden = !signedIn
 }
 
-function groupByDay(tasks, withToday) {
+function groupByDay(tasks) {
   const days = [...new Set(tasks.map(t => t.day))]
-  if (withToday && !days.includes(today())) days.push(today())
   return days.sort().reverse().map(day => ({
     day,
     tasks: tasks.filter(t => t.day === day).sort((a, b) => a.position - b.position),
@@ -72,7 +71,7 @@ function row(task, inTrash) {
 
 function renderList(ul, tasks, inTrash) {
   ul.innerHTML = ''
-  for (const { day, tasks: dayTasks } of groupByDay(tasks, !inTrash)) {
+  for (const { day, tasks: dayTasks } of groupByDay(tasks)) {
     const heading = document.createElement('li')
     heading.className = 'day'
     heading.dataset.day = day
@@ -123,7 +122,7 @@ function withEmptyHeadings(ul, leaving) {
   const all = [...ul.children]
   const out = [...leaving]
   all.forEach((row, i) => {
-    if (isTask(row) || (ul.id === 'list' && row.dataset.day === today())) return
+    if (isTask(row)) return
     const group = []
     for (let j = i + 1; j < all.length && isTask(all[j]); j++) group.push(all[j])
     if (group.length && group.every(r => leaving.includes(r))) out.push(row)
@@ -213,7 +212,14 @@ function drag(e, li) {
   handle.onpointerup = handle.onpointercancel = () => {
     handle.onpointermove = handle.onpointerup = handle.onpointercancel = null
     const heights = list => list.reduce((sum, r) => sum + r.offsetHeight, 0)
-    const slot = to > from ? heights(rows.slice(from + 1, to + 1)) : -heights(rows.slice(to, from))
+    let slot = to > from ? heights(rows.slice(from + 1, to + 1)) : -heights(rows.slice(to, from))
+    const above = rows[from - 1]
+    const alone = above && !isTask(above) && !isTask(rows[from + 1])
+    if (to !== from && alone) {
+      above.style.setProperty('--h', above.offsetHeight + 'px')
+      above.classList.add('collapse')
+      if (to < from) slot += above.offsetHeight
+    }
     li.classList.remove('dragging')
     li.style.transform = `translateY(${slot}px)`
     setTimeout(() => drop(rows, li, to, from), 160)
