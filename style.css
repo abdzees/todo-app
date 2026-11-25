@@ -54,3 +54,5 @@ nav button { white-space: nowrap; padding: 10px 12px; }
 #bar { gap: 8px; font-size: 15px; }
 #bar button { padding: 10px; }
 .tasks .restore { display: flex; align-items: center; }
+.tasks .remove, .tasks .restore { display: flex; align-items: center; }
+.tasks svg { display: block; }

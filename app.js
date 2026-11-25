@@ -7,7 +7,9 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 const $ = id => document.getElementById(id)
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const TABS = ['todos', 'notes', 'removed']
-const RESTORE_ICON = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3 2.5 6.5 6 10"/><path d="M2.5 6.5H10a3.5 3.5 0 0 1 0 7H7"/></svg>'
+const icon = path => `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`
+const RESTORE_ICON = icon('<path d="M6.5 3.5 3.5 6.5 6.5 9.5"/><path d="M3.5 6.5H9.5a3 3 0 0 1 0 6H6.5"/>')
+const CLOSE_ICON = icon('<path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/>')
 
 let items = JSON.parse(localStorage.getItem('items') || '[]')
 let selected = new Set()
@@ -43,8 +45,8 @@ function row(task, inTrash) {
   const li = document.createElement('li')
   li.dataset.id = task.id
   li.innerHTML = inTrash
-    ? `<input type="checkbox"><span></span><button class="restore" title="Restore">${RESTORE_ICON}</button><button class="remove" title="Delete forever">✕</button>`
-    : '<input type="checkbox"><span></span><b class="handle">☰</b><button class="remove">✕</button>'
+    ? `<input type="checkbox"><span></span><button class="restore" title="Restore">${RESTORE_ICON}</button><button class="remove" title="Delete forever">${CLOSE_ICON}</button>`
+    : `<input type="checkbox"><span></span><b class="handle">☰</b><button class="remove">${CLOSE_ICON}</button>`
   const checkbox = li.querySelector('input')
   const span = li.querySelector('span')
   span.textContent = task.text
