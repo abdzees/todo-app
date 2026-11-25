@@ -397,7 +397,11 @@ for (const t of TABS) $('tab-' + t).onclick = () => tab(t)
 
 let swipe = null
 let settling = false
-const slideTo = (el, x) => (el.style.transform = `translateX(${x}px)`)
+const swipeX = new Map()
+const slideTo = (el, x) => {
+  swipeX.set(el, x)
+  el.style.transform = `translateX(${x}px)`
+}
 
 function showNeighbor(side) {
   const name = TABS[TABS.indexOf(current) + side]
@@ -463,10 +467,19 @@ async function release() {
   const from = $(current)
   settling = true
   if (go) highlight(name)
-  for (const el of [from, neighbor]) if (el) el.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.1, 0.64, 1)'
-  slideTo(from, go ? -side * width : 0)
-  if (neighbor) slideTo(neighbor, go ? 0 : side * width)
-  await new Promise(done => setTimeout(done, 320))
+  const bounce = 14
+  const settle = (el, to, extra) => {
+    const at = x => ({ transform: `translateX(${x}px)` })
+    const frames = [{ ...at(swipeX.get(el)), easing: 'cubic-bezier(0.2, 0.7, 0.3, 1)' }]
+    if (extra) frames.push({ ...at(to + extra), offset: 0.6, easing: 'ease-in-out' })
+    frames.push(at(to))
+    return el.animate(frames, { duration: 380, fill: 'forwards' }).finished
+  }
+  const jobs = [settle(from, go ? -side * width : 0, go ? 0 : side * bounce)]
+  if (neighbor) jobs.push(settle(neighbor, go ? 0 : side * width, go ? -side * bounce : 0))
+  await Promise.all(jobs)
+  from.getAnimations().forEach(a => a.cancel())
+  neighbor?.getAnimations().forEach(a => a.cancel())
   from.removeAttribute('style')
   if (neighbor) {
     neighbor.removeAttribute('style')
