@@ -42,20 +42,21 @@ document.addEventListener('pointerdown', () => {
 
 function swoosh() {
   if (!audio) return
-  const length = 0.22
+  const length = 0.16
   const start = audio.currentTime
   const buffer = audio.createBuffer(1, Math.round(audio.sampleRate * length), audio.sampleRate)
-  buffer.getChannelData(0).forEach((_, i, data) => (data[i] = Math.random() * 2 - 1))
+  let last = 0
+  buffer.getChannelData(0).forEach((_, i, data) => (data[i] = last = (last + 0.04 * (Math.random() * 2 - 1)) / 1.04))
   const source = audio.createBufferSource()
   source.buffer = buffer
   const filter = audio.createBiquadFilter()
   filter.type = 'bandpass'
-  filter.Q.value = 1.2
-  filter.frequency.setValueAtTime(2500, start)
-  filter.frequency.exponentialRampToValueAtTime(500, start + length)
+  filter.Q.value = 0.6
+  filter.frequency.setValueAtTime(1200, start)
+  filter.frequency.exponentialRampToValueAtTime(300, start + length)
   const gain = audio.createGain()
   gain.gain.setValueAtTime(0.0001, start)
-  gain.gain.exponentialRampToValueAtTime(0.1, start + 0.05)
+  gain.gain.exponentialRampToValueAtTime(0.25, start + 0.05)
   gain.gain.exponentialRampToValueAtTime(0.0001, start + length)
   source.connect(filter).connect(gain).connect(audio.destination)
   source.start(start)
