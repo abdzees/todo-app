@@ -110,3 +110,4 @@ body { touch-action: pan-y; }
 }
 .tasks input[type=checkbox]:checked, #bar input[type=checkbox]:checked { background: var(--fg); border-color: var(--fg); }
 .tasks input[type=checkbox]:active, #bar input[type=checkbox]:active { transform: scale(0.88); }
+nav button { transition: transform 0.12s; }

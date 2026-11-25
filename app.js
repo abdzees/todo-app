@@ -380,16 +380,18 @@ function play(el, name) {
   setTimeout(() => el.classList.remove(name), 450)
 }
 
+function highlight(name) {
+  for (const t of TABS) $('tab-' + t).classList.toggle('active', t === name)
+  play($('tab-' + name), 'bounce')
+}
+
 function tab(name, slide = true) {
   if (name === current) return
   const side = TABS.indexOf(name) > TABS.indexOf(current) ? 'from-right' : 'from-left'
   current = name
-  for (const t of TABS) {
-    $(t).hidden = t !== name
-    $('tab-' + t).classList.toggle('active', t === name)
-  }
+  for (const t of TABS) $(t).hidden = t !== name
+  if (!$('tab-' + name).classList.contains('active')) highlight(name)
   if (slide) play($(name), side)
-  play($('tab-' + name), 'bounce')
 }
 for (const t of TABS) $('tab-' + t).onclick = () => tab(t)
 
@@ -460,6 +462,7 @@ async function release() {
   const go = !!neighbor && (Math.sign(dx) * (dx + velocity(swipe.moves, performance.now()) * 2)) / width > 0.6
   const from = $(current)
   settling = true
+  if (go) highlight(name)
   for (const el of [from, neighbor]) if (el) el.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.1, 0.64, 1)'
   slideTo(from, go ? -side * width : 0)
   if (neighbor) slideTo(neighbor, go ? 0 : side * width)
